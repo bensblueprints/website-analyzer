@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Report — Website Auditor</title>
+<style>
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+
+  /* ---------- Top Bar ---------- */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    height: 64px;
+    background: #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  }
+
+  .topbar-brand {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f8fafc;
+    white-space: nowrap;
+  }
+
+  .topbar-center {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .score-badge {
+    display: none; /* shown via JS when score available */
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 8px;
+    padding: 6px 16px;
+  }
+
+  .score-badge.visible {
+    display: flex;
+  }
+
+  .score-number {
+    font-size: 22px;
+    font-weight: 800;
+    color: #3b82f6;
+  }
+
+  .score-separator {
+    color: rgba(255,255,255,.3);
+    font-size: 18px;
+  }
+
+  .score-grade {
+    font-size: 16px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .grade-a  { background: #22c55e; color: #fff; }
+  .grade-b  { background: #84cc16; color: #0f172a; }
+  .grade-c  { background: #eab308; color: #0f172a; }
+  .grade-d  { background: #f97316; color: #fff; }
+  .grade-f  { background: #ef4444; color: #fff; }
+  .grade-default { background: #64748b; color: #fff; }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-primary {
+    background: #3b82f6;
+    color: #fff;
+  }
+  .btn-primary:hover { background: #2563eb; }
+
+  .btn-outline {
+    background: transparent;
+    color: #f8fafc;
+    border: 1px solid rgba(255,255,255,.25);
+  }
+  .btn-outline:hover { background: rgba(255,255,255,.08); }
+
+  /* ---------- Main Area ---------- */
+  .main {
+    margin-top: 64px;
+    height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- Loading State ---------- */
+  .state-loading,
+  .state-error {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    text-align: center;
+  }
+
+  .state-loading { display: flex; }
+  .state-error   { display: none; }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(59,130,246,.2);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    margin-bottom: 20px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .loading-subtext {
+    font-size: 14px;
+    color: #64748b;
+    margin-top: 6px;
+  }
+
+  .error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  .error-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+  }
+
+  .error-message {
+    font-size: 15px;
+    color: #64748b;
+    max-width: 440px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  /* ---------- Report Iframe ---------- */
+  .report-frame {
+    flex: 1;
+    width: 100%;
+    border: none;
+    display: none; /* shown after load */
+    background: #fff;
+  }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    background: #0f172a;
+    color: #94a3b8;
+    text-align: center;
+    padding: 16px 24px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .footer a {
+    color: #3b82f6;
+    text-decoration: none;
+  }
+  .footer a:hover { text-decoration: underline; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 640px) {
+    .topbar { padding: 0 12px; }
+
+    .topbar-brand { font-size: 15px; }
+
+    .btn {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    .score-badge { padding: 4px 10px; }
+    .score-number { font-size: 18px; }
+    .score-grade { font-size: 13px; padding: 2px 8px; }
+
+    .btn-text-mobile { display: none; }
+  }
+
+  @media (max-width: 420px) {
+    .topbar-center { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Top Bar ===== -->
+<header class="topbar">
+  <div class="topbar-brand">Website Auditor</div>
+
+  <div class="topbar-center">
+    <div class="score-badge" id="scoreBadge">
+      <span class="score-number" id="scoreNumber"></span>
+      <span class="score-separator">/</span>
+      <span class="score-grade grade-default" id="scoreGrade"></span>
+    </div>
+  </div>
+
+  <div class="topbar-actions">
+    <button class="btn btn-outline" id="downloadBtn" style="display:none;" onclick="downloadPdf()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span class="btn-text-mobile">Download PDF</span>
+    </button>
+    <a class="btn btn-primary" href="/">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      <span class="btn-text-mobile">Analyze Another Site</span>
+    </a>
+  </div>
+</header>
+
+<!-- ===== Main Content ===== -->
+<main class="main">
+
+  <!-- Loading -->
+  <div class="state-loading" id="stateLoading">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading your report...</div>
+    <div class="loading-subtext">This usually takes just a moment.</div>
+  </div>
+
+  <!-- Error -->
+  <div class="state-error" id="stateError">
+    <div class="error-icon">&#9888;</div>
+    <div class="error-title" id="errorTitle">Report Not Found</div>
+    <div class="error-message" id="errorMessage">We couldn't load this report. Please check your email for the full report.</div>
+    <a class="btn btn-primary" href="/">Analyze Another Website</a>
+  </div>
+
+  <!-- Report Iframe -->
+  <iframe class="report-frame" id="reportFrame" sandbox="allow-same-origin allow-popups" title="Website Audit Report"></iframe>
+
+</main>
+
+<!-- ===== Footer ===== -->
+<footer class="footer">
+  Generated by Website Auditor &mdash; Powered by <a href="https://advancedmarketing.co" target="_blank" rel="noopener">Advanced Marketing</a>
+</footer>
+
+<script>
+(function () {
+  // --- DOM refs ---
+  var stateLoading = document.getElementById('stateLoading');
+  var stateError   = document.getElementById('stateError');
+  var reportFrame  = document.getElementById('reportFrame');
+  var scoreBadge   = document.getElementById('scoreBadge');
+  var scoreNumber  = document.getElementById('scoreNumber');
+  var scoreGrade   = document.getElementById('scoreGrade');
+  var errorTitle   = document.getElementById('errorTitle');
+  var errorMessage = document.getElementById('errorMessage');
+  var downloadBtn  = document.getElementById('downloadBtn');
+
+  // --- Parse URL params ---
+  var params = new URLSearchParams(window.location.search);
+  var jobId  = params.get('jobId');
+  var score  = params.get('score');
+  var grade  = params.get('grade');
+
+  // --- Show score/grade immediately if available ---
+  if (score || grade) {
+    if (score) scoreNumber.textContent = score;
+    if (grade) {
+      scoreGrade.textContent = grade;
+      var g = grade.toUpperCase().charAt(0);
+      var cls = { A:'grade-a', B:'grade-b', C:'grade-c', D:'grade-d', F:'grade-f' }[g] || 'grade-default';
+      scoreGrade.className = 'score-grade ' + cls;
+    }
+    scoreBadge.classList.add('visible');
+  }
+
+  // --- No jobId: show error ---
+  if (!jobId) {
+    showError('No Report Found', 'No report ID was provided. Go back to analyze a website.');
+    return;
+  }
+
+  // --- Show download button ---
+  downloadBtn.style.display = '';
+
+  // --- Fetch the report HTML ---
+  fetch('/api/report?jobId=' + encodeURIComponent(jobId))
+    .then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
+    .then(function (html) {
+      stateLoading.style.display = 'none';
+      reportFrame.srcdoc = html;
+      reportFrame.style.display = 'block';
+    })
+    .catch(function () {
+      showError(
+        'Report Not Found',
+        'This report is not available yet or could not be loaded. If your analysis is still processing, check your email for the completed report.'
+      );
+    });
+
+  // --- Helpers ---
+  function showError(title, message) {
+    stateLoading.style.display = 'none';
+    errorTitle.textContent   = title;
+    errorMessage.textContent = message;
+    stateError.style.display = 'flex';
+  }
+
+  // Expose download function to global scope
+  window.downloadPdf = function () {
+    window.open('/api/report?jobId=' + encodeURIComponent(jobId) + '&format=pdf', '_blank');
+  };
+})();
+</script>
+
+</body>
+</html>
