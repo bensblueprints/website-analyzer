@@ -190,9 +190,9 @@ async function launchBrowser() {
 
 async function crawlSite(browser, startUrl, options = {}) {
   const {
-    maxPages = 5,
-    delay = 200,
-    timeout = 15000,
+    maxPages = 50,
+    delay = 300,
+    timeout = 20000,
   } = options;
 
   const crawlStart = Date.now();
@@ -244,6 +244,7 @@ async function crawlSite(browser, startUrl, options = {}) {
 
   enqueue(normalizedStart);
   for (const su of sitemapUrls) enqueue(su);
+  console.log(`[Crawler] Starting BFS — seed URLs: ${queue.length} (1 start + ${sitemapUrls.length} from sitemap), maxPages: ${maxPages}`);
 
   // ----- Page-by-page crawl -----
   const pages = [];
@@ -423,6 +424,7 @@ async function crawlSite(browser, startUrl, options = {}) {
       }
 
       pages.push(pageData);
+      console.log(`[Crawler] Page ${pages.length}/${maxPages}: ${currentUrl} (status: ${pageData.statusCode}, links found: ${pageData.links.internal.length} internal, queue size: ${queue.length})`);
 
       // Rate-limit between pages
       if (delay > 0 && queueIndex < queue.length && pages.length < maxPages) {
@@ -736,9 +738,9 @@ async function runFullAnalysis(url) {
   try {
     // 1. Crawl
     const crawlData = await crawlSite(browser, url, {
-      maxPages: 5,
-      delay: 200,
-      timeout: 15000,
+      maxPages: 50,
+      delay: 300,
+      timeout: 20000,
     });
 
     if (!crawlData.pages || crawlData.pages.length === 0) {
@@ -772,7 +774,7 @@ async function runFullAnalysis(url) {
     const { generateReport } = require('../../../src/reporter');
     const reportHtml = generateReport(scoreResult, crawlData, {
       url,
-      maxPages: 5,
+      maxPages: 50,
       analyzedAt: new Date().toISOString(),
     });
 

@@ -2417,38 +2417,41 @@ input { font-family: inherit; }
   }
 
   // ===== FAKE PROGRESS =====
-  // Tuned so that 94% is reached in ~100-110 seconds (matching real analysis time)
-  // Interval: 300ms. Total ticks to 94%: ~330-370 ticks
+  // Tuned for crawling up to 50 pages — total analysis takes 2-5 minutes
+  // Progress should reach ~94% around the 3-minute mark
   function startFakeProgress() {
     var speed = 0;
     var elapsed = 0;
 
     fakeProgressTimer = setInterval(function() {
       elapsed++;
+      var elapsedSec = elapsed * 0.3; // interval is 300ms
 
-      // Very gradual ramp — designed for 100-120 second total analysis time
-      if (currentPercent < 10) {
-        speed = 0.15 + Math.random() * 0.1;        // ~20s to reach 10%
-      } else if (currentPercent < 25) {
-        speed = 0.08 + Math.random() * 0.06;        // ~35s to reach 25%
-      } else if (currentPercent < 50) {
-        speed = 0.06 + Math.random() * 0.04;        // ~60s to reach 50%
-      } else if (currentPercent < 70) {
-        speed = 0.04 + Math.random() * 0.03;        // ~80s to reach 70%
-      } else if (currentPercent < 85) {
-        speed = 0.025 + Math.random() * 0.015;      // ~95s to reach 85%
-      } else if (currentPercent < 92) {
-        speed = 0.012 + Math.random() * 0.008;      // ~108s to reach 92%
+      // Very slow ramp — designed for 2-5 minute analysis
+      if (currentPercent < 8) {
+        speed = 0.08 + Math.random() * 0.05;
+      } else if (currentPercent < 20) {
+        speed = 0.05 + Math.random() * 0.03;
+      } else if (currentPercent < 40) {
+        speed = 0.035 + Math.random() * 0.025;
+      } else if (currentPercent < 60) {
+        speed = 0.025 + Math.random() * 0.015;
+      } else if (currentPercent < 75) {
+        speed = 0.015 + Math.random() * 0.01;
+      } else if (currentPercent < 88) {
+        speed = 0.008 + Math.random() * 0.005;
       } else {
-        speed = 0.004 + Math.random() * 0.003;      // crawls toward 94%
+        speed = 0.003 + Math.random() * 0.002;
       }
 
       var target = Math.min(currentPercent + speed, 94);
       updateProgressUI(target);
 
-      // Show reassuring message if we've been waiting a while above 80%
-      if (currentPercent > 80 && elapsed > 250) {
-        progressStepLabel.textContent = 'Almost done — complex sites take a bit longer...';
+      // Show reassuring messages at various stages
+      if (currentPercent > 85 && elapsedSec > 120) {
+        progressStepLabel.textContent = 'Almost done — crawling all pages takes a bit longer...';
+      } else if (currentPercent > 70 && elapsedSec > 90) {
+        progressStepLabel.textContent = 'Analyzing all discovered pages...';
       }
     }, 300);
   }
