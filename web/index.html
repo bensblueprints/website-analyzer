@@ -2389,13 +2389,13 @@ input { font-family: inherit; }
     progressBarFill.style.width = percent + '%';
     progressPercentText.textContent = Math.round(percent) + '%';
 
-    // Determine step
+    // Determine step — spread across full ~100s analysis timeline
     var newStep;
-    if (percent < 15) newStep = 0;
-    else if (percent < 35) newStep = 1;
-    else if (percent < 55) newStep = 2;
-    else if (percent < 80) newStep = 3;
-    else newStep = 4;
+    if (percent < 20) newStep = 0;       // Crawling (~0-20s)
+    else if (percent < 40) newStep = 1;  // Performance audit (~20-45s)
+    else if (percent < 60) newStep = 2;  // SEO & content (~45-65s)
+    else if (percent < 82) newStep = 3;  // Accessibility & security (~65-90s)
+    else newStep = 4;                    // Generating report (~90s+)
 
     if (newStep !== currentStep) {
       setProgressStep(newStep);
@@ -2417,27 +2417,40 @@ input { font-family: inherit; }
   }
 
   // ===== FAKE PROGRESS =====
+  // Tuned so that 94% is reached in ~100-110 seconds (matching real analysis time)
+  // Interval: 300ms. Total ticks to 94%: ~330-370 ticks
   function startFakeProgress() {
-    var target = 0;
     var speed = 0;
+    var elapsed = 0;
 
     fakeProgressTimer = setInterval(function() {
-      // Progress slows down as it goes higher, never reaches 95% on its own
-      if (currentPercent < 20) {
-        speed = 0.4 + Math.random() * 0.3;
+      elapsed++;
+
+      // Very gradual ramp — designed for 100-120 second total analysis time
+      if (currentPercent < 10) {
+        speed = 0.15 + Math.random() * 0.1;        // ~20s to reach 10%
+      } else if (currentPercent < 25) {
+        speed = 0.08 + Math.random() * 0.06;        // ~35s to reach 25%
       } else if (currentPercent < 50) {
-        speed = 0.25 + Math.random() * 0.2;
-      } else if (currentPercent < 75) {
-        speed = 0.12 + Math.random() * 0.1;
-      } else if (currentPercent < 90) {
-        speed = 0.04 + Math.random() * 0.03;
+        speed = 0.06 + Math.random() * 0.04;        // ~60s to reach 50%
+      } else if (currentPercent < 70) {
+        speed = 0.04 + Math.random() * 0.03;        // ~80s to reach 70%
+      } else if (currentPercent < 85) {
+        speed = 0.025 + Math.random() * 0.015;      // ~95s to reach 85%
+      } else if (currentPercent < 92) {
+        speed = 0.012 + Math.random() * 0.008;      // ~108s to reach 92%
       } else {
-        speed = 0.01;
+        speed = 0.004 + Math.random() * 0.003;      // crawls toward 94%
       }
 
-      target = Math.min(currentPercent + speed, 94);
+      var target = Math.min(currentPercent + speed, 94);
       updateProgressUI(target);
-    }, 200);
+
+      // Show reassuring message if we've been waiting a while above 80%
+      if (currentPercent > 80 && elapsed > 250) {
+        progressStepLabel.textContent = 'Almost done — complex sites take a bit longer...';
+      }
+    }, 300);
   }
 
   function stopFakeProgress() {
