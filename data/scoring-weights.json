@@ -1,0 +1,52 @@
+{
+  "categoryWeights": {
+    "performance": 0.15,
+    "seo": 0.15,
+    "accessibility": 0.12,
+    "security": 0.12,
+    "links": 0.10,
+    "content": 0.10,
+    "mobile": 0.10,
+    "technical": 0.08,
+    "ux-signals": 0.04,
+    "infrastructure": 0.04
+  },
+  "severityWeights": {
+    "critical": 3,
+    "major": 2,
+    "minor": 1
+  },
+  "grades": {
+    "A+": { "min": 90, "max": 100, "label": "Exceptional", "color": "#22c55e" },
+    "A":  { "min": 80, "max": 89,  "label": "Excellent",   "color": "#4ade80" },
+    "B":  { "min": 70, "max": 79,  "label": "Good",        "color": "#a3e635" },
+    "C":  { "min": 60, "max": 69,  "label": "Average",     "color": "#facc15" },
+    "D":  { "min": 50, "max": 59,  "label": "Below Average","color": "#fb923c" },
+    "F":  { "min": 30, "max": 49,  "label": "Poor",        "color": "#f87171" },
+    "F-": { "min": 1,  "max": 29,  "label": "Critical Issues","color": "#ef4444" }
+  },
+  "categoryLabels": {
+    "performance": "Performance",
+    "seo": "SEO",
+    "accessibility": "Accessibility",
+    "security": "Security",
+    "links": "Links & Navigation",
+    "content": "Content Quality",
+    "mobile": "Mobile & Responsiveness",
+    "technical": "Technical HTML/CSS",
+    "ux-signals": "UX Signals",
+    "infrastructure": "Infrastructure"
+  },
+  "categoryCheckCounts": {
+    "performance": 60,
+    "seo": 80,
+    "accessibility": 70,
+    "security": 50,
+    "links": 40,
+    "content": 50,
+    "mobile": 40,
+    "technical": 50,
+    "ux-signals": 30,
+    "infrastructure": 30
+  }
+}
