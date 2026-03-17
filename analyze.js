@@ -20,7 +20,7 @@ const fs = require('fs');
 
 const { crawlSite } = require('./src/crawler');
 const { calculateOverallScore, generateExecutiveSummary } = require('./src/scorer');
-const { generateReport } = require('./src/reporter');
+const { generateReport, generatePDF } = require('./src/reporter');
 
 // Analyzer imports
 const { analyzePerformance } = require('./src/analyzers/performance');
@@ -52,6 +52,7 @@ program
   .option('-v, --verbose', 'Verbose output', false)
   .option('--no-lighthouse', 'Skip Lighthouse analysis (faster but fewer data points)')
   .option('--no-axe', 'Skip axe-core accessibility analysis')
+  .option('--no-pdf', 'Skip PDF report generation')
   .action(runAnalysis);
 
 program.parse();
@@ -244,7 +245,22 @@ async function runAnalysis(url, options) {
   }
 
   fs.writeFileSync(outputPath, reportHtml);
-  reportSpinner.succeed(`Report saved to ${outputPath}`);
+  reportSpinner.succeed(`HTML report saved to ${outputPath}`);
+
+  // ───── Phase 7: Generate PDF ─────
+  let pdfPath = null;
+  if (options.pdf !== false) {
+    const pdfSpinner = ora({ text: 'Generating PDF report...', color: 'magenta' }).start();
+    try {
+      pdfPath = outputPath.replace(/\.html$/, '.pdf');
+      await generatePDF(reportHtml, pdfPath);
+      pdfSpinner.succeed(`PDF report saved to ${pdfPath}`);
+    } catch (err) {
+      pdfSpinner.warn(`PDF generation failed: ${err.message}`);
+      pdfPath = null;
+      if (options.verbose) console.error(err);
+    }
+  }
 
   // ───── Print Summary ─────
   const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -286,7 +302,10 @@ async function runAnalysis(url, options) {
     console.log('');
   }
 
-  console.log(chalk.dim(`  Full report: ${outputPath}`));
+  console.log(chalk.dim(`  HTML report: ${outputPath}`));
+  if (pdfPath) {
+    console.log(chalk.dim(`  PDF report:  ${pdfPath}`));
+  }
   console.log('');
 }
 

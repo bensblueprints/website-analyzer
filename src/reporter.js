@@ -1044,4 +1044,168 @@ function generateReport(scoreResult, crawlData, options) {
   return html;
 }
 
-module.exports = { generateReport };
+// ---------------------------------------------------------------------------
+// PDF Generation — renders the HTML report in Puppeteer and prints to PDF
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate a beautiful PDF report from the HTML report.
+ *
+ * @param {string} htmlContent - The complete HTML report string
+ * @param {string} outputPath  - File path to save the PDF
+ * @param {object} [pdfOptions] - Optional Puppeteer PDF options override
+ * @returns {Promise<string>} The output path of the saved PDF
+ */
+async function generatePDF(htmlContent, outputPath, pdfOptions = {}) {
+  const puppeteer = require('puppeteer');
+
+  // Inject PDF-specific style overrides to make the report print-beautiful
+  const pdfCSS = `
+    <style>
+      /* ---- PDF-specific overrides ---- */
+      @page {
+        size: A4;
+        margin: 16mm 14mm 20mm 14mm;
+      }
+
+      body {
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Force all collapsible sections open */
+      details { display: block !important; }
+      details > .collapse-body { display: block !important; }
+      details > summary::before { display: none !important; }
+      details > summary { pointer-events: none; }
+      button { display: none !important; }
+
+      /* Header stays vibrant */
+      .report-header {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        padding: 36px 24px 44px !important;
+        page-break-after: avoid;
+      }
+      .report-header::before { display: none !important; }
+
+      /* Score circle in PDF */
+      .score-circle svg { width: 160px !important; height: 160px !important; }
+      .score-circle { width: 160px !important; height: 160px !important; }
+
+      /* Ensure colored elements render */
+      .grade-badge, .sev-badge, .page-status, .rec-num, .cat-bar,
+      .cat-d-grade, .icon-pass, .icon-fail, .icon-warn {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Card styling for print */
+      .card {
+        box-shadow: none !important;
+        border: 1px solid #e2e8f0;
+        page-break-inside: avoid;
+      }
+
+      /* Category bars render properly */
+      .cat-bar-wrap {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Section breaks */
+      .section {
+        page-break-inside: avoid;
+        margin: 28px 0;
+      }
+      .section-title {
+        page-break-after: avoid;
+      }
+
+      /* Issues table: allow page break inside but keep header */
+      .issues-table thead { display: table-header-group; }
+      .issues-table { page-break-inside: auto; }
+      .issues-table tr { page-break-inside: avoid; }
+
+      /* Collapse sections for PDF */
+      .collapse-section {
+        page-break-inside: avoid;
+        border: 1px solid #e2e8f0;
+      }
+
+      /* Check list items */
+      .check-item { page-break-inside: avoid; }
+      .rec-item { page-break-inside: avoid; }
+
+      /* Footer */
+      .report-footer {
+        page-break-before: avoid;
+        margin-top: 24px !important;
+      }
+
+      /* Make container wider for A4 */
+      .container { max-width: 100%; }
+    </style>
+  `;
+
+  // Inject the PDF CSS right before </head>
+  const pdfHtml = htmlContent.replace('</head>', pdfCSS + '\n</head>');
+
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+  });
+
+  try {
+    const page = await browser.newPage();
+
+    // Load HTML content directly
+    await page.setContent(pdfHtml, {
+      waitUntil: 'networkidle0',
+      timeout: 30000,
+    });
+
+    // Force all <details> elements open via JS (belt + suspenders with CSS above)
+    await page.evaluate(() => {
+      document.querySelectorAll('details').forEach(d => d.setAttribute('open', ''));
+    });
+
+    // Small delay to let any CSS transitions settle
+    await new Promise(r => setTimeout(r, 500));
+
+    // Generate PDF
+    const defaultPdfOptions = {
+      path: outputPath,
+      format: 'A4',
+      printBackground: true,
+      preferCSSPageSize: false,
+      margin: {
+        top: '16mm',
+        right: '14mm',
+        bottom: '20mm',
+        left: '14mm',
+      },
+      displayHeaderFooter: true,
+      headerTemplate: '<div></div>',
+      footerTemplate: `
+        <div style="width:100%;font-size:9px;color:#94a3b8;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:0 14mm;">
+          <span>Website Analysis Report</span>
+          <span style="margin:0 12px">&bull;</span>
+          <span>Advanced Marketing</span>
+          <span style="margin:0 12px">&bull;</span>
+          <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+        </div>
+      `,
+    };
+
+    await page.pdf({ ...defaultPdfOptions, ...pdfOptions });
+
+    return outputPath;
+  } finally {
+    await browser.close();
+  }
+}
+
+module.exports = { generateReport, generatePDF };
