@@ -2,13 +2,13 @@
   "name": "website-auditor-functions",
   "private": true,
   "dependencies": {
-    "@netlify/blobs": "^8.1.0",
-    "@sparticuz/chromium": "^131.0.0",
-    "puppeteer-core": "^24.0.0",
     "@axe-core/puppeteer": "^4.10.0",
+    "@netlify/blobs": "^8.1.0",
+    "@sparticuz/chromium": "^143.0.4",
     "cheerio": "^1.0.0",
-    "text-readability": "^1.0.5",
+    "puppeteer-core": "^24.0.0",
+    "resend": "^4.0.0",
     "robots-parser": "^3.0.1",
-    "resend": "^4.0.0"
+    "text-readability": "^1.0.5"
   }
 }
