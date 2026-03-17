@@ -5,6 +5,7 @@
 [functions]
   node_bundler = "esbuild"
   included_files = ["src/**", "data/**"]
+  external_node_modules = ["@sparticuz/chromium"]
 
 [functions."analyze-background"]
   timeout = 900

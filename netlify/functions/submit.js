@@ -1,4 +1,4 @@
-const { getStore } = require('@netlify/blobs');
+const { getBlobStore } = require('./utils/blobs');
 const crypto = require('crypto');
 
 function normalizeEmailKey(email) {
@@ -51,8 +51,8 @@ exports.handler = async (event) => {
   }
 
   try {
-    const leadsStore = getStore('leads');
-    const jobsStore = getStore('jobs');
+    const leadsStore = getBlobStore('leads');
+    const jobsStore = getBlobStore('jobs');
     const emailKey = normalizeEmailKey(email);
 
     // Check if this email already has a report
@@ -133,14 +133,18 @@ exports.handler = async (event) => {
     const siteUrl = process.env.URL || process.env.SITE_URL || `https://${event.headers.host}`;
     const bgUrl = `${siteUrl}/.netlify/functions/analyze-background`;
 
-    // Fire and forget — background function returns 202 immediately
-    fetch(bgUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobId, email: email.trim(), url: url.trim() }),
-    }).catch(err => {
+    // Await the fetch — background functions return 202 immediately so this is fast
+    try {
+      const bgResponse = await fetch(bgUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, email: email.trim(), url: url.trim() }),
+      });
+      console.log(`Background function triggered: ${bgResponse.status}`);
+    } catch (err) {
       console.error('Failed to trigger background function:', err.message);
-    });
+      // Still return success — job is queued, background may retry
+    }
 
     return {
       statusCode: 200,

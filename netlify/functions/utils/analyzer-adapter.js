@@ -129,17 +129,57 @@ async function fetchSitemapUrls(sitemapUrl, domain, depth = 0) {
 // ---------------------------------------------------------------------------
 
 async function launchBrowser() {
-  const chromium = require('@sparticuz/chromium');
   const puppeteer = require('puppeteer-core');
 
-  chromium.setHeadlessMode = true;
-  chromium.setGraphicsMode = false;
+  let executablePath;
+  let args;
+  let headless;
+
+  try {
+    const chromium = require('@sparticuz/chromium');
+    chromium.setHeadlessMode = true;
+    chromium.setGraphicsMode = false;
+    executablePath = await chromium.executablePath();
+    args = chromium.args;
+    headless = chromium.headless;
+  } catch (chromErr) {
+    // Fallback: try common paths
+    const fs = require('fs');
+    const possiblePaths = [
+      '/tmp/chromium',
+      '/opt/chromium',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/google-chrome',
+    ];
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) { executablePath = p; break; }
+    }
+    if (!executablePath) {
+      throw new Error(`Failed to launch browser: ${chromErr.message}`);
+    }
+    args = [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--single-process',
+      '--no-zygote',
+    ];
+    headless = true;
+  }
 
   const browser = await puppeteer.launch({
-    args: chromium.args,
+    args: args || [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--single-process',
+      '--no-zygote',
+    ],
     defaultViewport: { width: 1440, height: 900 },
-    executablePath: await chromium.executablePath(),
-    headless: chromium.headless,
+    executablePath,
+    headless: headless ?? true,
   });
   return browser;
 }

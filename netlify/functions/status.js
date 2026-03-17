@@ -1,4 +1,4 @@
-const { getStore } = require('@netlify/blobs');
+const { getBlobStore } = require('./utils/blobs');
 
 exports.handler = async (event) => {
   const headers = {
@@ -21,7 +21,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const jobsStore = getStore('jobs');
+    const jobsStore = getBlobStore('jobs');
     const raw = await jobsStore.get(jobId);
 
     if (!raw) {

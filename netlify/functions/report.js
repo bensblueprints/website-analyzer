@@ -1,4 +1,4 @@
-const { getStore } = require('@netlify/blobs');
+const { getBlobStore } = require('./utils/blobs');
 
 exports.handler = async (event) => {
   const corsHeaders = {
@@ -27,7 +27,7 @@ exports.handler = async (event) => {
 
   try {
     // Check job exists and is completed
-    const jobsStore = getStore('jobs');
+    const jobsStore = getBlobStore('jobs');
     const jobRaw = await jobsStore.get(jobId);
 
     if (!jobRaw) {
@@ -49,7 +49,7 @@ exports.handler = async (event) => {
 
     if (format === 'pdf') {
       // Serve PDF
-      const pdfStore = getStore('reports-pdf');
+      const pdfStore = getBlobStore('reports-pdf');
       const pdfData = await pdfStore.get(jobId, { type: 'arrayBuffer' });
 
       if (!pdfData) {
@@ -75,7 +75,7 @@ exports.handler = async (event) => {
     }
 
     // Serve HTML report
-    const reportsStore = getStore('reports');
+    const reportsStore = getBlobStore('reports');
     const htmlReport = await reportsStore.get(jobId);
 
     if (!htmlReport) {

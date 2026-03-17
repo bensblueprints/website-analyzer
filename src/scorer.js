@@ -3,8 +3,7 @@
  * Calculates a 1-100 score from all analyzer results
  */
 
-const path = require('path');
-const weights = require(path.join(__dirname, '..', 'data', 'scoring-weights.json'));
+const weights = require('../data/scoring-weights.json');
 
 function getGrade(score) {
   const rounded = Math.round(score);

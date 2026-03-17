@@ -1,6 +1,6 @@
 'use strict';
 
-const { getStore } = require('@netlify/blobs');
+const { getBlobStore } = require('./utils/blobs');
 const { Resend } = require('resend');
 const { buildReportEmail } = require('./utils/email-templates');
 
@@ -34,9 +34,9 @@ exports.handler = async (event) => {
     return { statusCode: 400 };
   }
 
-  const jobsStore = getStore('jobs');
-  const reportsStore = getStore('reports');
-  const pdfStore = getStore('reports-pdf');
+  const jobsStore = getBlobStore('jobs');
+  const reportsStore = getBlobStore('reports');
+  const pdfStore = getBlobStore('reports-pdf');
 
   try {
     // Mark as processing
