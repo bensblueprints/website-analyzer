@@ -736,10 +736,10 @@ async function runFullAnalysis(url) {
   }
 
   try {
-    // 1. Crawl
+    // 1. Crawl — homepage only to stay within Netlify function memory limits
     const crawlData = await crawlSite(browser, url, {
-      maxPages: 50,
-      delay: 300,
+      maxPages: 1,
+      delay: 0,
       timeout: 20000,
     });
 
@@ -747,13 +747,8 @@ async function runFullAnalysis(url) {
       throw new Error('Crawl returned zero pages for ' + url);
     }
 
-    // 2. axe-core accessibility audit
-    let axeResults = null;
-    try {
-      axeResults = await runAxeCore(browser, url);
-    } catch (err) {
-      console.error('axe-core skipped:', err.message || err);
-    }
+    // 2. axe-core accessibility audit (skip — too memory-heavy in serverless)
+    const axeResults = null;
 
     // 3. Lighthouse is too heavy for Lambda -- pass null (analyzers handle it gracefully)
     const lighthouseResults = null;
@@ -774,17 +769,12 @@ async function runFullAnalysis(url) {
     const { generateReport } = require('../../../src/reporter');
     const reportHtml = generateReport(scoreResult, crawlData, {
       url,
-      maxPages: 50,
+      maxPages: 1,
       analyzedAt: new Date().toISOString(),
     });
 
-    // 7. PDF Report (best-effort)
-    let pdfBuffer = null;
-    try {
-      pdfBuffer = await generatePDFBuffer(browser, reportHtml);
-    } catch (err) {
-      console.error('PDF generation failed:', err.message || err);
-    }
+    // 7. PDF Report (skip — too memory-heavy in serverless)
+    const pdfBuffer = null;
 
     return {
       scoreResult,
